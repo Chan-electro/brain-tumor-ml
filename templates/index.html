@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brain Tumor Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Brain Tumor Detection from MRI</h1>
+        <p>Select detection mode</p>
+        <form method="post">
+            <label>
+                <input type="radio" name="mode" value="binary" checked>
+                Binary (Tumor vs No tumor)
+            </label>
+            <br>
+            <label>
+                <input type="radio" name="mode" value="multi">
+                Multi class (Glioma, Meningioma, Pituitary, No tumor)
+            </label>
+            <br><br>
+            <button type="submit">Continue</button>
+        </form>
+        <p class="disclaimer">
+            This application is for research and educational purposes and is not a medical device.
+        </p>
+    </div>
+</body>
+</html>

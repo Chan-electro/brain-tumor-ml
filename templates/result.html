@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Prediction Result</h1>
+
+        {% if mode == 'binary' %}
+        <p>Binary result: <strong>{{ binary_label }}</strong></p>
+        {% endif %}
+
+        <p>Model prediction: <strong>{{ label }}</strong></p>
+        <p>Confidence: <strong>{{ confidence }}%</strong></p>
+
+        <div class="images">
+            <div>
+                <h2>Original Image</h2>
+                <img src="data:image/png;base64,{{ original_image }}" alt="Original MRI">
+            </div>
+            <div>
+                <h2>Grad CAM Heatmap</h2>
+                <img src="data:image/png;base64,{{ heatmap_image }}" alt="Grad CAM">
+            </div>
+        </div>
+
+        <p class="disclaimer">
+            This tool is a research and educational prototype. It must not be used for diagnosis or treatment decisions.
+        </p>
+
+        <a href="{{ url_for('predict', mode=mode) }}">Analyze another image</a>
+        <br>
+        <a href="{{ url_for('index') }}">Back to Home</a>
+    </div>
+</body>
+
+</html>

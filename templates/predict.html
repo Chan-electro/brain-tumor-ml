@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Upload MRI Image</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Upload MRI Image</h1>
+        <p>Mode: <strong>{{ mode|capitalize }}</strong></p>
+        <form method="post" enctype="multipart/form-data">
+            <div class="upload-area">
+                <input type="file" name="image" accept="image/*" required>
+            </div>
+            <button type="submit">Predict</button>
+        </form>
+        <a href="{{ url_for('index') }}">Back to Home</a>
+    </div>
+</body>
+
+</html>

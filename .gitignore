@@ -1,0 +1,44 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+
+# Model weights (optional, but good if large files are present, though user might want them pushed. I'll comment them out for now in case they want them, but usually large files are an issue. Given it's "brain-tumor-ml", models might be large.)
+# *.h5
+# *.keras
+# *.tflite
+
+# IDE
+.vscode/
+.idea/
