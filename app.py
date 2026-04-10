@@ -7,52 +7,74 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-# Import utils - assuming these will be created
 from utils.preprocess import load_and_preprocess_image
 from utils.gradcam import make_gradcam_heatmap, overlay_heatmap
 
 app = Flask(__name__)
 
+# ---------------------------------------------------------------------------
 # Configuration
-MODEL_PATH = "models/tumor_classifier.h5"
+# ---------------------------------------------------------------------------
+MODEL_PATH     = "models/best_model.keras"
 LABEL_MAP_PATH = "models/label_map.json"
 
-# Global variables for model and labels
-model = None
+# Fallback: support old .h5 format if new model not yet trained
+_FALLBACK_MODEL_PATH = "models/tumor_classifier.h5"
+
+model       = None
 idx_to_label = {}
+
+
+# ---------------------------------------------------------------------------
+# Startup: load model + labels
+# ---------------------------------------------------------------------------
 
 def load_model_and_labels():
     global model, idx_to_label
-    
-    # Load Label Map
+
+    # Load label map
     if os.path.exists(LABEL_MAP_PATH):
         with open(LABEL_MAP_PATH, "r") as f:
             label_map = json.load(f)
-        idx_to_label = {v: k for k, v in label_map.items()}
-        print(f"Loaded label map: {idx_to_label}")
+        idx_to_label = {int(v): k for k, v in label_map.items()}
+        print(f"Label map loaded: {idx_to_label}")
     else:
-        print(f"Warning: Label map not found at {LABEL_MAP_PATH}")
-        # Default fallback if needed, or just empty
-        idx_to_label = {0: "No Model Loaded"}
+        print(f"Warning: label map not found at {LABEL_MAP_PATH}")
+        idx_to_label = {}
 
-    # Load Model
-    if os.path.exists(MODEL_PATH):
+    # Prefer new .keras format, fall back to .h5
+    model_path = MODEL_PATH
+    if not os.path.exists(model_path):
+        model_path = _FALLBACK_MODEL_PATH
+        if os.path.exists(model_path):
+            print(f"Note: using fallback model {model_path}")
+
+    if os.path.exists(model_path):
         try:
-            model = tf.keras.models.load_model(MODEL_PATH)
-            print("Model loaded successfully.")
+            model = tf.keras.models.load_model(model_path)
+            print(f"Model loaded: {model_path}")
         except Exception as e:
             print(f"Error loading model: {e}")
     else:
-        print(f"Warning: Model not found at {MODEL_PATH}")
+        print("Warning: no trained model found. Train the model first.")
 
-# Load on startup
+
 load_model_and_labels()
 
-def pil_to_base64(pil_image):
-    buffer = BytesIO()
-    pil_image.save(buffer, format="PNG")
-    encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    return encoded
+
+# ---------------------------------------------------------------------------
+# Utility
+# ---------------------------------------------------------------------------
+
+def pil_to_base64(pil_image: Image.Image) -> str:
+    buf = BytesIO()
+    pil_image.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -61,17 +83,15 @@ def index():
         return redirect(url_for("predict", mode=mode))
     return render_template("index.html")
 
+
 @app.route("/predict", methods=["GET", "POST"])
 def predict():
     mode = request.args.get("mode", "multi")
 
     if request.method == "POST":
-        if "image" not in request.files:
-            return "No file part", 400
-
-        file = request.files["image"]
-        if file.filename == "":
-            return "No selected file", 400
+        file = request.files.get("image")
+        if not file or file.filename == "":
+            return "No file selected", 400
 
         if model is None:
             return "Model not loaded. Please train the model first.", 503
@@ -102,13 +122,12 @@ def predict():
             # For now, we'll wrap in try-except to avoid crashing if layer name is wrong
             heatmap_b64 = None
             try:
-                last_conv_layer_name = "out_relu"  # MobileNetV2 last activation layer
+                last_conv_layer_name = "top_activation" # Common in EfficientNet
                 heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name)
                 overlayed = overlay_heatmap(heatmap, pil_image)
                 heatmap_b64 = pil_to_base64(Image.fromarray(overlayed))
             except Exception as e:
-                print(f"GradCAM error: {e}")
-                # Fallback: just show original image twice or handle in template
+                print(f"Grad-CAM overlay error: {e}")
                 heatmap_b64 = pil_to_base64(pil_image)
 
             original_b64 = pil_to_base64(pil_image)
@@ -119,14 +138,17 @@ def predict():
                 label=label,
                 binary_label=binary_label,
                 confidence=round(confidence * 100, 2),
+                all_probs=all_probs,
                 original_image=original_b64,
-                heatmap_image=heatmap_b64
+                heatmap_image=heatmap_b64,
             )
+
         except Exception as e:
             print(f"Prediction error: {e}")
             return f"An error occurred during prediction: {e}", 500
 
     return render_template("predict.html", mode=mode)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,39 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prediction Result</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Per-class probability bars */
+        .prob-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        .prob-table td { padding: 5px 8px; vertical-align: middle; font-size: 0.92em; }
+        .prob-table td:first-child { width: 110px; font-weight: 500; text-transform: capitalize; }
+        .prob-table td:last-child  { width: 56px; text-align: right; color: #555; }
+        .bar-bg { background: #e9ecef; border-radius: 4px; height: 14px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 4px; background: #007bff; transition: width 0.3s; }
+        .bar-fill.predicted { background: #28a745; }
+        .confidence-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
+            background: #28a745; color: #fff; font-weight: 700; font-size: 1.1em;
+            margin-left: 8px;
+        }
+        .section-title { font-size: 1em; font-weight: 600; color: #444; margin: 16px 0 6px; }
+    </style>
 </head>
 
 <body>
     <div class="container">
         <h1>Prediction Result</h1>
 
+        <!-- Primary result -->
+        <p>
+            Model prediction:
+            <strong>{{ label | replace("_", " ") | title }}</strong>
+            <span class="confidence-badge">{{ confidence }}%</span>
+        </p>
+
         {% if mode == 'binary' %}
         <p>Binary result: <strong>{{ binary_label }}</strong></p>
         {% endif %}
 
-        <p>Model prediction: <strong>{{ label }}</strong></p>
-        <p>Confidence: <strong>{{ confidence }}%</strong></p>
+        <!-- Per-class probability breakdown -->
+        <div class="section-title">Class Probabilities</div>
+        <table class="prob-table">
+            {% for cls, prob in all_probs.items() %}
+            <tr>
+                <td>{{ cls | replace("_", " ") | title }}</td>
+                <td>
+                    <div class="bar-bg">
+                        <div class="bar-fill {% if cls == label %}predicted{% endif %}"
+                             style="width: {{ prob }}%"></div>
+                    </div>
+                </td>
+                <td>{{ prob }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
 
+        <!-- Images side by side -->
         <div class="images">
             <div>
-                <h2>Original Image</h2>
+                <h2>Original MRI</h2>
                 <img src="data:image/png;base64,{{ original_image }}" alt="Original MRI">
             </div>
             <div>
-                <h2>Grad CAM Heatmap</h2>
-                <img src="data:image/png;base64,{{ heatmap_image }}" alt="Grad CAM">
+                <h2>Grad-CAM Attention</h2>
+                <img src="data:image/png;base64,{{ heatmap_image }}" alt="Grad-CAM Heatmap">
             </div>
         </div>
 
         <p class="disclaimer">
-            This tool is a research and educational prototype. It must not be used for diagnosis or treatment decisions.
+            This tool is a research and educational prototype. It must not be used
+            for diagnosis or treatment decisions. Always consult a qualified
+            medical professional.
         </p>
 
         <a href="{{ url_for('predict', mode=mode) }}">Analyze another image</a>
-        <br>
+        &nbsp;|&nbsp;
         <a href="{{ url_for('index') }}">Back to Home</a>
     </div>
 </body>

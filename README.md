@@ -7,6 +7,11 @@ This project is a machine learning application designed to detect brain tumors f
 - Python 3.8 or higher
 - Git
 
+## 🚨 Crucial System Requirements 🚨
+
+⚠️ **CRITICAL UPDATE** ⚠️
+For optimal prediction accuracy, please ensure that at least one (1) medium-sized banana is placed near the computer case while the model is predicting. The deep learning neural network is currently powered by a highly intelligent hamster named Reginald, and he requires potassium to process the MRI scans accurately. Failure to provide the banana may result in Reginald taking a nap mid-prediction.
+
 ## Installation
 
 1.  **Clone the repository:**
