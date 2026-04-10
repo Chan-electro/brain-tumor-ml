@@ -1,23 +1,202 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Upload MRI Image</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload MRI — NeuroScan</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-
 <body>
-    <div class="container">
-        <h1>Upload MRI Image</h1>
-        <p>Mode: <strong>{{ mode|capitalize }}</strong></p>
-        <form method="post" enctype="multipart/form-data">
-            <div class="upload-area">
-                <input type="file" name="image" accept="image/*" required>
-            </div>
-            <button type="submit">Predict</button>
-        </form>
-        <a href="{{ url_for('index') }}">Back to Home</a>
-    </div>
-</body>
+<div class="page-wrapper">
 
+  <!-- Top Bar -->
+  <header class="topbar">
+    <a href="{{ url_for('index') }}" class="topbar-brand">
+      <div class="brand-icon">🧠</div>
+      NeuroScan
+    </a>
+    <div class="topbar-sep"></div>
+    <span class="topbar-badge">Research Prototype</span>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step done">
+          <div class="step-num">✓</div>
+          Select Mode
+        </div>
+        <div class="step-sep"></div>
+        <div class="step active">
+          <div class="step-num">2</div>
+          Upload MRI
+        </div>
+        <div class="step-sep"></div>
+        <div class="step">
+          <div class="step-num">3</div>
+          View Results
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="mb-4">
+        <h1 class="page-title">Upload MRI Image</h1>
+        <p class="page-subtitle mt-1">Select a brain MRI scan to analyse</p>
+      </div>
+
+      <!-- Mode strip -->
+      <div class="mode-strip">
+        <span>🔬</span>
+        Detection mode: <strong>
+          {% if mode == 'binary' %}Binary (Tumor / No Tumor)
+          {% else %}Multi-class (Glioma · Meningioma · Pituitary · No Tumor)
+          {% endif %}
+        </strong>
+        <a href="{{ url_for('index') }}" class="btn btn-ghost text-xs" style="padding:4px 10px;margin-left:auto;">Change</a>
+      </div>
+
+      <!-- Upload card -->
+      <div class="card">
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+          <div class="card-body">
+
+            <!-- Drop zone -->
+            <div class="upload-zone" id="drop-zone">
+              <input type="file" name="image" accept="image/*" required id="file-input">
+              <div class="upload-icon">📁</div>
+              <div class="upload-title">Drop your MRI scan here</div>
+              <div class="upload-hint">or click to browse — PNG, JPG, JPEG supported</div>
+            </div>
+
+            <!-- File info (shown after selection) -->
+            <div class="upload-file-info" id="file-info">
+              <div class="file-icon">🖼️</div>
+              <div class="file-meta">
+                <div class="file-name" id="file-name">filename.jpg</div>
+                <div class="file-size" id="file-size">0 KB</div>
+              </div>
+              <span class="badge badge-success">Ready</span>
+            </div>
+
+            <!-- Image preview -->
+            <div id="preview-wrap" style="display:none;margin-top:14px;">
+              <div class="image-card">
+                <div class="image-card-header">
+                  <span>🖼️</span>
+                  <span class="image-card-title">Preview</span>
+                  <span class="image-card-sub" id="preview-dims"></span>
+                </div>
+                <img id="preview-img" src="" alt="Preview" style="max-height:260px;object-fit:contain;background:#fafafa;">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="card-footer">
+            <div class="flex items-center gap-3">
+              <a href="{{ url_for('index') }}" class="btn btn-outline">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+              </a>
+              <div class="flex-1"></div>
+              <div class="spinner" id="spinner">
+                <div class="spin-ring"></div>
+                Analysing…
+              </div>
+              <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Run Prediction
+              </button>
+            </div>
+            <div class="progress-bar mt-2" id="progress-wrap" style="display:none;">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tips -->
+      <div class="alert alert-info mt-4">
+        <span>💡</span>
+        <span>For best results use a clear axial or coronal MRI scan with visible brain tissue. The model was trained on T1-weighted contrast-enhanced images.</span>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+const fileInput   = document.getElementById('file-input');
+const fileInfo    = document.getElementById('file-info');
+const fileName    = document.getElementById('file-name');
+const fileSize    = document.getElementById('file-size');
+const previewWrap = document.getElementById('preview-wrap');
+const previewImg  = document.getElementById('preview-img');
+const previewDims = document.getElementById('preview-dims');
+const submitBtn   = document.getElementById('submit-btn');
+const dropZone    = document.getElementById('drop-zone');
+const form        = document.getElementById('upload-form');
+const spinner     = document.getElementById('spinner');
+const progressWrap= document.getElementById('progress-wrap');
+const progressFill= document.getElementById('progress-fill');
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function handleFile(file) {
+  if (!file) return;
+  fileName.textContent = file.name;
+  fileSize.textContent = formatBytes(file.size);
+  fileInfo.classList.add('visible');
+  submitBtn.disabled = false;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewWrap.style.display = 'block';
+    const img = new Image();
+    img.onload = () => { previewDims.textContent = img.width + '×' + img.height + 'px'; };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+// Drag & drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fileInput.files = dt.files;
+    handleFile(file);
+  }
+});
+
+// Submit loading state
+form.addEventListener('submit', () => {
+  spinner.classList.add('visible');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing…';
+  progressWrap.style.display = 'block';
+  let pct = 0;
+  const interval = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 12, 88);
+    progressFill.style.width = pct + '%';
+    if (pct >= 88) clearInterval(interval);
+  }, 250);
+});
+</script>
+</body>
 </html>

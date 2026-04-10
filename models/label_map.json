@@ -1,1 +1,6 @@
-{"glioma": 0, "meningioma": 1, "no_tumor": 2, "pituitary": 3}
+{
+  "glioma": 0,
+  "meningioma": 1,
+  "no_tumor": 2,
+  "pituitary": 3
+}

@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL import Image
 
 from utils.preprocess import load_and_preprocess_image
-from utils.gradcam import make_gradcam_heatmap, overlay_heatmap
+from utils.gradcam import make_gradcam_heatmap, overlay_heatmap, get_last_conv_layer_name
 
 app = Flask(__name__)
 
@@ -99,32 +99,33 @@ def predict():
         try:
             img_array, pil_image = load_and_preprocess_image(file)
 
-            # Run prediction
-            preds = model.predict(img_array)[0]
-            predicted_idx = int(np.argmax(preds))
-            confidence = float(preds[predicted_idx])
-            
+            # Run prediction + Grad-CAM in one pass
+            # make_gradcam_heatmap returns (heatmap, predicted_idx, pred_probs)
+            # auto-detects the last conv layer — works with any backbone
+            heatmap_np, predicted_idx, pred_probs = make_gradcam_heatmap(
+                img_array, model
+            )
+
+            confidence = float(pred_probs[predicted_idx])
+
             # Get label safely
             label = idx_to_label.get(predicted_idx, "Unknown")
+
+            # all_probs: dict of {class_name: probability_percent}
+            all_probs = {
+                idx_to_label.get(i, str(i)): round(float(p) * 100, 2)
+                for i, p in enumerate(pred_probs)
+            }
 
             # Binary mode logic
             binary_label = None
             if mode == "binary":
-                # Assuming 'no_tumor' is the label for no tumor
-                if label.lower() == "no_tumor":
-                    binary_label = "No Tumor"
-                else:
-                    binary_label = "Tumor"
+                binary_label = "No Tumor" if label.lower() == "no_tumor" else "Tumor"
 
-            # Grad CAM
-            # Note: 'top_conv' is a placeholder. EfficientNetB0 usually has 'top_activation' or similar.
-            # We will need to verify the layer name after training.
-            # For now, we'll wrap in try-except to avoid crashing if layer name is wrong
+            # Build Grad-CAM overlay
             heatmap_b64 = None
             try:
-                last_conv_layer_name = "top_activation" # Common in EfficientNet
-                heatmap = make_gradcam_heatmap(img_array, model, last_conv_layer_name)
-                overlayed = overlay_heatmap(heatmap, pil_image)
+                overlayed = overlay_heatmap(heatmap_np, pil_image)
                 heatmap_b64 = pil_to_base64(Image.fromarray(overlayed))
             except Exception as e:
                 print(f"Grad-CAM overlay error: {e}")

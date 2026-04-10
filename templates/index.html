@@ -1,29 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Brain Tumor Detector</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brain Tumor Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+<div class="page-wrapper">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <a href="{{ url_for('index') }}" class="topbar-brand">
+      <div class="brand-icon">🧠</div>
+      NeuroScan
+    </a>
+    <div class="topbar-sep"></div>
+    <span class="topbar-badge">Research Prototype</span>
+  </header>
+
+  <main class="main-content">
     <div class="container">
-        <h1>Brain Tumor Detection from MRI</h1>
-        <p>Select detection mode</p>
-        <form method="post">
-            <label>
-                <input type="radio" name="mode" value="binary" checked>
-                Binary (Tumor vs No tumor)
-            </label>
-            <br>
-            <label>
-                <input type="radio" name="mode" value="multi">
-                Multi class (Glioma, Meningioma, Pituitary, No tumor)
-            </label>
-            <br><br>
-            <button type="submit">Continue</button>
-        </form>
-        <p class="disclaimer">
-            This application is for research and educational purposes and is not a medical device.
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-icon">🧠</div>
+        <h1 class="page-title">Brain Tumor Detection</h1>
+        <p class="page-subtitle mt-2">
+          Upload an MRI scan and get an AI-powered classification<br>with Grad-CAM visual explanations
         </p>
+      </div>
+
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step active">
+          <div class="step-num">1</div>
+          Select Mode
+        </div>
+        <div class="step-sep"></div>
+        <div class="step">
+          <div class="step-num">2</div>
+          Upload MRI
+        </div>
+        <div class="step-sep"></div>
+        <div class="step">
+          <div class="step-num">3</div>
+          View Results
+        </div>
+      </div>
+
+      <!-- Mode selection card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-semibold" style="font-size:15px;">Choose Detection Mode</div>
+              <div class="text-sm text-muted mt-1">Select how you want the model to classify the scan</div>
+            </div>
+          </div>
+        </div>
+
+        <form method="post">
+          <div class="card-body">
+
+            <div class="mode-grid">
+              <!-- Binary mode -->
+              <label class="mode-card">
+                <input type="radio" name="mode" value="binary">
+                <div class="mode-card-inner">
+                  <div class="mode-icon">⚡</div>
+                  <div class="mode-name">Binary</div>
+                  <div class="mode-desc">Tumor detected or No tumor — fast and straightforward.</div>
+                </div>
+              </label>
+
+              <!-- Multi-class mode -->
+              <label class="mode-card">
+                <input type="radio" name="mode" value="multi" checked>
+                <div class="mode-card-inner">
+                  <div class="mode-icon">🔬</div>
+                  <div class="mode-name">Multi-class</div>
+                  <div class="mode-desc">Glioma · Meningioma · Pituitary · No Tumor with probabilities.</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Feature highlights -->
+            <hr class="sep mt-4">
+            <div class="section-label">What you get</div>
+            <div class="feature-list">
+              <div class="feature-item">
+                <span class="check">✓</span>
+                Grad-CAM heatmap showing which brain regions drove the prediction
+              </div>
+              <div class="feature-item">
+                <span class="check">✓</span>
+                Confidence score and per-class probability breakdown
+              </div>
+              <div class="feature-item">
+                <span class="check">✓</span>
+                Side-by-side original and attention overlay for easy comparison
+              </div>
+            </div>
+
+          </div>
+
+          <div class="card-footer">
+            <div class="flex items-center justify-between">
+              <div class="disclaimer" style="border:none;background:none;padding:0;color:var(--muted-fg);font-size:12px;flex:1;">
+                <span class="disclaimer-icon">⚠️</span>
+                For research &amp; educational use only. Not a clinical tool.
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg">
+                Continue
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer mt-4">
+        <span class="disclaimer-icon">⚠️</span>
+        <span>This application is a research and educational prototype. It is <strong>not a medical device</strong> and must not be used to make clinical decisions. Always consult a qualified medical professional for diagnosis or treatment.</span>
+      </div>
+
     </div>
+  </main>
+
+</div>
 </body>
 </html>
